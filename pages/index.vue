@@ -1,6 +1,36 @@
 <template>
   <div>
     Weather App
+    <div
+      v-if="weather.id"
+    >
+    <v-col
+        class="d-flex"
+        cols="12"
+        sm="6"
+      >
+        <v-select
+          :items="items"
+          label="Seleact a City"
+          v-model="selectCity"
+          dense
+          @change="cityWeather"
+        ></v-select>
+      </v-col>
+    
+    <p class="mb-0">
+      {{weather.city}}, {{weather.country}}
+      <v-icon
+        dark
+        right
+      >
+        mdi-map-marker
+      </v-icon>
+    </p>
+    <h1 class="font-regular">{{(weather.main.feels_like).toFixed(0)}}<sup>&deg;</sup></h1>
+    <p>{{weather.weather.description}}</p>
+    <img :src=w_icon alt="weather icon">
+  </div>
   </div>
 </template>
 
@@ -9,46 +39,42 @@ export default {
   name: 'IndexPage',
   data() {
     return {
+      items: ['Kuala Lumpur', 'George Town', 'Johor Bahru', 'Shah Alam', 'Putrajaya',
+      'Cheras', 'Kajang', 'Klang', 'Rawang', 'Petaling Jaya', 'Semenyih', 'Banting',
+      'Alor Setar', 'Sungai Petani', 'Kuching', 'Miri', 'Kota Kinabalu', 'Ipoh', 'Kuala Kangsar',
+      'Kuala Terengganu', 'Dungun', 'Kota Bahru', 'Butterworth', 'Juru', 'Perai', 'Kuantan',
+      'Seremban', 'Port Dickson', 'Alor Gajah', 'Ayer Keroh'],
       city: null,
       selectCity: "Kuala Lumpur",
       forecast: [],
       addCity: null,
       loading: false,
+      current: {
+        id: null,
+      },
       API_KEY: "651072fb549d123c9df96253099daf2e",
     };
   },
 
   created() {
-    console.log("hello")
-    this.currentLocation()
+    this.cityWeather()
   },
 
   methods: {
     currentLocation() {
-      // if (navigator.geolocation) {
+      if (navigator.geolocation) {
         this.loading = true;
         this.forecast = [];
         navigator.geolocation.getCurrentPosition(
           (position) => {
-            console.log('kjjkm')
             this.coordsWeather(
               position.coords.latitude,
               position.coords.longitude
             );
             this.loading = false;
-            console.log(position)
-          },
-          (err) => {
-            this.loading = false;
-            this.error = true;
-            this.errorMsg =
-              err.code == 1
-                ? "You have denied location permission"
-                : err.message;
-              console.log('kjjkm',err)
           },
         )
-      // }
+      }
     },
     cityWeather() {
       this.loading = true;
@@ -67,12 +93,8 @@ export default {
           wind: response.wind,
         };
         this.loading = false; 
+        console.log(this.current)
       })
-      .catch((error) => {
-        this.loading = false;
-        this.error = true;
-        this.errorMsg = error.response.data.message;
-      });
     },
     forecastWeather() {
       this.$axios
@@ -108,11 +130,7 @@ export default {
         }
         this.tempDate = "";
       })
-      .catch((err) => {
-        this.loading = false;
-        this.error = true;
-        this.errorMsg = err.response.data.message;
-      });
+    
     },
     coordsWeather(lat, long) {
       console.log(lat, long)
@@ -135,6 +153,21 @@ export default {
         this.error = true;
         this.errorMsg = error.response.data.message;
       });
+    },
+    kelvinToCelcius(k) {
+      return (k - 273.15).toFixed(0);
+    },
+  },
+
+  computed: {
+    weather() {
+      return this.current;
+    },
+
+    w_icon() {
+      return this.weather.weather
+      ? `http://openweathermap.org/img/wn/${this.weather.weather.icon}@2x.png`
+      : ''
     },
   },
 
