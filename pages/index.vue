@@ -1,9 +1,19 @@
 <template>
   <div>
-    Weather App
     <div
       v-if="weather.id"
     >
+    <div class="my-2">
+          <v-btn
+            color="primary"
+            fab
+            small
+            dark
+            @click="currentLocation"
+          >
+            <v-icon>mdi-crosshairs-gps</v-icon>
+          </v-btn>
+        </div>
     <v-col
         class="d-flex"
         cols="12"
@@ -16,6 +26,7 @@
           dense
           @change="cityWeather"
         ></v-select>
+        
       </v-col>
     
     <p class="mb-0">
@@ -28,13 +39,65 @@
       </v-icon>
     </p>
     <h1 class="font-regular">{{(weather.main.feels_like).toFixed(0)}}<sup>&deg;</sup></h1>
-    <p>{{weather.weather.description}}</p>
+    
     <img :src=w_icon alt="weather icon">
+    <p>{{weather.weather.description}}</p>
+
+      <div
+      class="mt-10"
+      v-if="forecast && forecast.length > 0"
+    >
+      <div
+        v-for="(f, index) in forecast"
+        :key="index"
+      >
+        <p class="font-semibold">{{formatDate(f.dateString)}}, {{formatDay(f.dateString)}}</p>
+        <v-row
+          class="justify-space-between"
+          v-for="(l, i) in f.list"
+          :key="i"
+        >
+          <v-col>
+            <p>{{l.weather}}</p>
+          </v-col>
+          <v-col class="text-right">
+            <p class="small-font">{{formatTime(l.dateString)}}</p>
+          </v-col>
+        </v-row>
+      </div>
+    </div>
+
+    <v-carousel
+    cycle
+    height="400"
+    hide-delimiter-background
+    show-arrows-on-hover
+  >
+    <v-carousel-item
+      v-for="(item, i) in items.slice(0, 3)"
+      :key="i"
+    >
+        <v-row  
+          class="fill-height"
+          align="center"
+          justify="center"
+        >
+          <div >
+            {{ item }}
+            <h3 class="font-regular">{{(weather.main.feels_like).toFixed(0)}}<sup>&deg;</sup></h3>
+            <img :src=w_icon alt="weather icon">
+            <p>{{weather.weather.description}}</p>
+          </div>
+        </v-row>
+    </v-carousel-item>
+  </v-carousel>
+
   </div>
   </div>
 </template>
 
 <script>
+import moment from "moment"
 export default {
   name: 'IndexPage',
   data() {
@@ -44,11 +107,11 @@ export default {
       'Alor Setar', 'Sungai Petani', 'Kuching', 'Miri', 'Kota Kinabalu', 'Ipoh', 'Kuala Kangsar',
       'Kuala Terengganu', 'Dungun', 'Kota Bahru', 'Butterworth', 'Juru', 'Perai', 'Kuantan',
       'Seremban', 'Port Dickson', 'Alor Gajah', 'Ayer Keroh'],
-      city: null,
       selectCity: "Kuala Lumpur",
       forecast: [],
       addCity: null,
       loading: false,
+      tempDate: "",
       current: {
         id: null,
       },
@@ -61,6 +124,18 @@ export default {
   },
 
   methods: {
+    formatDay(d) {
+      let dd = new Date(d);
+      return moment(dd).format("dddd");
+    },
+    formatDate(d) {
+      let dd = new Date(d);
+      return moment(dd).format("D/MM");
+    },
+    formatTime(d) {
+      let dd = new Date(d);
+      return moment(dd).format("h:mma");
+    },
     currentLocation() {
       if (navigator.geolocation) {
         this.loading = true;
@@ -126,6 +201,7 @@ export default {
               (f) => f.date === this.tempDate
             );
             this.forecast[index].list.push(obj);
+            console.log(obj)
           }
         }
         this.tempDate = "";
@@ -134,6 +210,7 @@ export default {
     },
     coordsWeather(lat, long) {
       console.log(lat, long)
+      this.forecastWeather();
       this.$axios
       .$get(
         `/data/2.5/weather?lat=${lat}&lon=${long}&units=metric&appid=${this.API_KEY}`
@@ -154,8 +231,8 @@ export default {
         this.errorMsg = error.response.data.message;
       });
     },
-    kelvinToCelcius(k) {
-      return (k - 273.15).toFixed(0);
+    convertTemperature(t) {
+      return (t - 273.15).toFixed(0);
     },
   },
 
@@ -168,6 +245,10 @@ export default {
       return this.weather.weather
       ? `http://openweathermap.org/img/wn/${this.weather.weather.icon}@2x.png`
       : ''
+    },
+
+    rightNow() {
+      return moment(new Date()).format("DDMMYYYYkkmmss");
     },
   },
 
