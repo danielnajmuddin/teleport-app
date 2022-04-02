@@ -1,47 +1,76 @@
 <template>
-  <div>
+  <div class="bg">
     <div
       v-if="weather.id"
     >
-    <div class="my-2">
-          <v-btn
-            color="primary"
-            fab
-            small
-            dark
-            @click="currentLocation"
-          >
-            <v-icon>mdi-crosshairs-gps</v-icon>
-          </v-btn>
-        </div>
-    <v-col
-        class="d-flex"
-        cols="12"
-        sm="6"
+    <div class="column justify-space-between">
+      <v-select
+        :items="items"
+        label="Select a City"
+        v-model="selectCity"
+        dense
+        @change="cityWeather"
+      ></v-select>
+
+      <v-text-field label="Add new city" v-model="newCity" append-icon="mdi-plus"
+        @click:append="addCity">
+      </v-text-field>
+
+      <v-carousel
+        cycle
+        height="300"
+        width="200"
+        hide-delimiter-background
+        show-arrows-on-hover
       >
-        <v-select
-          :items="items"
-          label="Seleact a City"
-          v-model="selectCity"
-          dense
-          @change="cityWeather"
-        ></v-select>
-        
-      </v-col>
-    
-    <p class="mb-0">
-      {{weather.city}}, {{weather.country}}
-      <v-icon
-        dark
-        right
+        <v-carousel-item
+          v-for="(item, i) in items.slice(0, 3)"
+          :key="i"
+        >
+             <v-sheet
+              :color="colors[i]"
+              height="100%"
+            >
+            <v-row  
+              class="fill-height"
+              align="center"
+              justify="center"
+            >
+              <div >
+                {{ item }}
+              </div>
+            </v-row>
+            </v-sheet>
+        </v-carousel-item>
+
+      </v-carousel>
+      <v-btn
+        depressed
+        color="primary"
+        @click="currentLocation"
       >
-        mdi-map-marker
-      </v-icon>
-    </p>
-    <h1 class="font-regular">{{(weather.main.feels_like).toFixed(0)}}<sup>&deg;</sup></h1>
+        Current Location
+      </v-btn>
+    </div>
+          
+    <div align="center">
+      <p >
+        {{weather.city}}, {{weather.country}}
+        <v-icon
+          dark
+          right
+        >
+          mdi-map-marker
+        </v-icon>
+      </p>
+      <h1 class="font-regular">{{(weather.main.feels_like).toFixed(0)}}<sup>&deg;</sup></h1>
+      
+      <img :src=w_icon alt="weather icon">
+      <p>{{weather.weather.description}}</p>
+      <p>Humidity: {{weather.main.humidity}} | Wind: {{weather.wind.speed}}</p>
+    </div>
     
-    <img :src=w_icon alt="weather icon">
-    <p>{{weather.weather.description}}</p>
+    
 
       <div
       class="mt-10"
@@ -51,7 +80,7 @@
         v-for="(f, index) in forecast"
         :key="index"
       >
-        <p class="font-semibold">{{formatDate(f.dateString)}}, {{formatDay(f.dateString)}}</p>
+        <p >{{formatDate(f.dateString)}}, {{formatDay(f.dateString)}}</p>
         <v-row
           class="justify-space-between"
           v-for="(l, i) in f.list"
@@ -61,38 +90,14 @@
             <p>{{l.weather}}</p>
           </v-col>
           <v-col class="text-right">
-            <p class="small-font">{{formatTime(l.dateString)}}</p>
+            <p >{{formatTime(l.dateString)}}</p>
+        
           </v-col>
         </v-row>
+        <v-divider></v-divider>
       </div>
     </div>
-
-    <v-carousel
-    cycle
-    height="400"
-    hide-delimiter-background
-    show-arrows-on-hover
-  >
-    <v-carousel-item
-      v-for="(item, i) in items.slice(0, 3)"
-      :key="i"
-    >
-        <v-row  
-          class="fill-height"
-          align="center"
-          justify="center"
-        >
-          <div >
-            {{ item }}
-            <h3 class="font-regular">{{(weather.main.feels_like).toFixed(0)}}<sup>&deg;</sup></h3>
-            <img :src=w_icon alt="weather icon">
-            <p>{{weather.weather.description}}</p>
-          </div>
-        </v-row>
-    </v-carousel-item>
-  </v-carousel>
-
-  </div>
+    </div>
   </div>
 </template>
 
@@ -109,12 +114,16 @@ export default {
       'Seremban', 'Port Dickson', 'Alor Gajah', 'Ayer Keroh'],
       selectCity: "Kuala Lumpur",
       forecast: [],
-      addCity: null,
+      newCity: null,
       loading: false,
       tempDate: "",
       current: {
         id: null,
       },
+      colors: [
+          'yellow darken-4',
+          'red lighten-1',
+          'deep-purple accent-4'],
       API_KEY: "651072fb549d123c9df96253099daf2e",
     };
   },
@@ -182,7 +191,7 @@ export default {
         for (let i = 0; i < list.length; i++) {
           let newDate = moment(list[i].dt_txt).format("D/MM");
           let now = moment(list[i].dt_txt).format("DDMMYYYYkkmmss");
-          if (now > this.rightNow) {
+          if (now > this.currently) {
             if (this.tempDate !== newDate) {
               this.tempDate = newDate;
               let p = {
@@ -201,7 +210,6 @@ export default {
               (f) => f.date === this.tempDate
             );
             this.forecast[index].list.push(obj);
-            console.log(obj)
           }
         }
         this.tempDate = "";
@@ -225,15 +233,19 @@ export default {
           wind: response.wind,
         };
       })
-      .catch((error) => {
-        this.loading = false;
-        this.error = true;
-        this.errorMsg = error.response.data.message;
-      });
     },
+
     convertTemperature(t) {
       return (t - 273.15).toFixed(0);
     },
+
+    addCity() {
+      this.items.push(this.newCity)
+      this.selectCity = this.newCity;
+      this.cityWeather()
+      this.newCity = null
+    }
+
   },
 
   computed: {
@@ -247,7 +259,7 @@ export default {
       : ''
     },
 
-    rightNow() {
+    currently() {
       return moment(new Date()).format("DDMMYYYYkkmmss");
     },
   },
@@ -255,3 +267,10 @@ export default {
 
 }
 </script>
+
+<style lang="scss">
+.bg {
+  padding: 20px 10px;
+  margin: 10px;
+}
+</style>
