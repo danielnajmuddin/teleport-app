@@ -24,7 +24,7 @@
         show-arrows-on-hover
       >
         <v-carousel-item
-          v-for="(item, i) in items.slice(0, 3)"
+          v-for="(m, i) in mainCities"
           :key="i"
         >
              <v-sheet
@@ -36,8 +36,11 @@
               align="center"
               justify="center"
             >
-              <div >
-                {{ item }}
+              <div align="Center">
+                <p>{{ m.city }}</p>
+                <h1 class="font-regular">{{(m.main.feels_like).toFixed(0)}}<sup>&deg;</sup></h1>
+                <p>{{ m.weather.main }}</p>
+                <p>Humidity: {{m.main.humidity}} % | Wind: {{m.wind.speed}} ms</p>
               </div>
             </v-row>
             </v-sheet>
@@ -68,6 +71,7 @@
       <img :src=w_icon alt="weather icon">
       <p>{{weather.weather.description}}</p>
       <p>Humidity: {{weather.main.humidity}} % | Wind: {{weather.wind.speed}} ms</p>
+      <v-divider></v-divider>
     </div>
     
     
@@ -113,11 +117,15 @@ export default {
       'Kuala Terengganu', 'Dungun', 'Kota Bahru', 'Butterworth', 'Juru', 'Perai', 'Kuantan',
       'Seremban', 'Port Dickson', 'Alor Gajah', 'Ayer Keroh'],
       selectCity: "Kuala Lumpur",
+      mainCities: [],
       forecast: [],
       newCity: null,
       loading: false,
       tempDate: "",
       current: {
+        id: null,
+      },
+      currentTab: {
         id: null,
       },
       colors: [
@@ -130,21 +138,12 @@ export default {
 
   created() {
     this.cityWeather()
+    this.callCarousel("Kuala Lumpur")
+    this.callCarousel("George Town")
+    this.callCarousel("Johor Bahru")
   },
 
   methods: {
-    formatDay(d) {
-      let dd = new Date(d);
-      return moment(dd).format("dddd");
-    },
-    formatDate(d) {
-      let dd = new Date(d);
-      return moment(dd).format("D/MM");
-    },
-    formatTime(d) {
-      let dd = new Date(d);
-      return moment(dd).format("h:mma");
-    },
     currentLocation() {
       if (navigator.geolocation) {
         this.loading = true;
@@ -234,6 +233,41 @@ export default {
         };
       })
     },
+    weatherByCity(mainCity) {
+      this.$axios
+      .$get(
+        `/data/2.5/weather?q=${mainCity}&units=metric&appid=${this.API_KEY}`
+      )
+      .then((response) => {
+        this.currentTab = {
+          id: response.id,
+          city: response.name,
+          country: response.sys.country,
+          weather: response.weather[0],
+          main: response.main,
+          wind: response.wind,
+        };
+        return response
+      })
+    },
+
+    callCarousel(city) {
+      this.$axios
+      .$get(
+        `/data/2.5/weather?q=${city}&units=metric&appid=${this.API_KEY}`
+      )
+      .then((response) => {
+        let obj = {
+          id: response.id,
+          city: response.name,
+          country: response.sys.country,
+          weather: response.weather[0],
+          main: response.main,
+          wind: response.wind,
+        };
+        this.mainCities.push(obj)
+      })
+    },
 
     convertTemperature(t) {
       return (t - 273.15).toFixed(0);
@@ -244,13 +278,30 @@ export default {
       this.selectCity = this.newCity;
       this.cityWeather()
       this.newCity = null
-    }
+    },
+    
+     formatDay(d) {
+      let dd = new Date(d);
+      return moment(dd).format("dddd");
+    },
+    formatDate(d) {
+      let dd = new Date(d);
+      return moment(dd).format("D/MM");
+    },
+    formatTime(d) {
+      let dd = new Date(d);
+      return moment(dd).format("h:mma");
+    },
 
   },
 
   computed: {
     weather() {
       return this.current;
+    },
+
+    mainweather() {
+      return this.currentTab;
     },
 
     w_icon() {
