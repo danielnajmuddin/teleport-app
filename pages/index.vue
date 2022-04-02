@@ -49,7 +49,7 @@
         color="primary"
         @click="currentLocation"
       >
-        Current Location
+        Show Current Location
       </v-btn>
     </div>
           
@@ -67,7 +67,7 @@
       
       <img :src=w_icon alt="weather icon">
       <p>{{weather.weather.description}}</p>
-      <p>Humidity: {{weather.main.humidity}} | Wind: {{weather.wind.speed}}</p>
+      <p>Humidity: {{weather.main.humidity}} % | Wind: {{weather.wind.speed}} ms</p>
     </div>
     
     
