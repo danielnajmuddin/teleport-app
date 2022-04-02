@@ -84,7 +84,7 @@
         v-for="(f, index) in forecast"
         :key="index"
       >
-        <p >{{formatDate(f.dateString)}}, {{formatDay(f.dateString)}}</p>
+        <p >{{formatDay(f.dateString)}}, {{formatDate(f.dateString)}}</p>
         <v-row
           class="justify-space-between"
           v-for="(l, i) in f.list"
